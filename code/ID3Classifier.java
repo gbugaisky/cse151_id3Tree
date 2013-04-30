@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.PriorityQueue;
 
 public class ID3Classifier
 {
@@ -56,10 +57,19 @@ public class ID3Classifier
 
     private static Node makeRule(Node current, LinkedList<float[]> currentList)
     {
+        PriorityQueue<float> attributeA = new PriorityQueue();
+        PriorityQueue<float> attributeB = new PriorityQueue();
+        PriorityQueue<float> attributeC = new PriorityQueue();
+        PriorityQueue<float> attributeD = new PriorityQueue();
+
+
         //first, check if the current node is pure
         int flag = 0;
         ListIterator iter = currentList.ListIterator();
         float[] prev = iter.next();
+        attributeA.add(prev[0]);
+        attributeB.add(prev[1]);
+        attributeC.add(prev[2]);
         while(iter.hasNext())
         {
             float[] cur = iter.next();
@@ -78,7 +88,7 @@ public class ID3Classifier
             return current;
         }
 
-        
+        float[] 
     }
 
     public class Node

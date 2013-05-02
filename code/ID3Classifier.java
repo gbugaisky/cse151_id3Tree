@@ -57,10 +57,40 @@ public class ID3Classifier
 
     private static Node makeRule(Node current, LinkedList<float[]> currentList)
     {
-        PriorityQueue<float> attributeA = new PriorityQueue();
-        PriorityQueue<float> attributeB = new PriorityQueue();
-        PriorityQueue<float> attributeC = new PriorityQueue();
-        PriorityQueue<float> attributeD = new PriorityQueue();
+        //Priority queues that will contain copies of the data.
+        PriorityQueue<float[]> attributeA = new PriorityQueue
+            (5,
+            new Comparator<float[]> () {    //a comparator on a specific element
+                public int compare(float[] a, float[] b) { 
+                    return ( (float) b[0]).compareTo(a[0]); //forget which order this makes,
+                                                            //or if order matters here
+                }
+            }
+            );
+        PriorityQueue<float[]> attributeB = new PriorityQueue
+            (5,
+            new Comparator<float[]> () {
+                public int compare(float[] a, float[] b) {
+                    return ( (float) b[1]).compareTo(a[1]);
+                }
+            }
+            );
+        PriorityQueue<float[]> attributeC = new PriorityQueue
+            (5,
+            new Comparator<float[]> () {
+                public int compare(float[] a, float[] b) {
+                    return ( (float) b[2]).compareTo(a[2]);
+                }
+            }
+            );
+        PriorityQueue<float[]> attributeD = new PriorityQueue
+            (5,
+            new Comparator<float[]> () {
+                public int compare(float[] a, float[] b) {
+                    return ( (float) b[3]).compareTo(a[3]);
+                }
+            }
+            );
 
 
         //first, check if the current node is pure
@@ -87,8 +117,36 @@ public class ID3Classifier
             current.threshold = null;
             return current;
         }
+        
+        
+        //else we have to split them. Fortunately we've already loaded all of our datapoints by order
 
-        float[] 
+        //0. Declare variables for the best thresholds in each axis and the corresponding entropy
+        //1. for each of the priority queues (aka each axis)
+            //A. For each pair of adjacent data points (say the current and the previous data point)
+                //A1. Get the threshold
+                //A2. compute the entropies of the subgroups created
+                //A3. Get the information gain from the entropies 
+                //A4. If the new information gain is larger than the current record information gain, then replace the current record information gain and threshold
+        //2. Compare each information gain
+        //3. Create two priority queues, one for each node
+        //4. For the priority queue which is associated witht the axis of the best information gain
+            //A. Compare an element with the threshold
+            //B. Put it in the appropriate threshold
+
+        //5. Load the threshold and axis into the node we were passed as an argument
+        //6. Create the two child nodes,
+        Node childNode1 = Node();
+        Node childNode2 = Node();
+
+        //7. make the recursive call
+        childNode1 = makeRule(childNode1, //one priority queue
+        childNode2 = makeRule(childNode2, //one priority queue
+
+        //8. Assign these child nodes to the node we were passed
+
+        //9. Return the node we were passed.
+
     }
 
     public class Node

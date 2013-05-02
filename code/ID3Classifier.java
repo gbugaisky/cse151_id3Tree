@@ -9,26 +9,31 @@ import java.util.PriorityQueue;
 
 public class ID3Classifier
 {
-    static LinkedList<float[]> dataList;
+    static ArrayList<float[]> dataList;
+    static Node root;
+    static ID3Classifier classifier;
+    static String tabs;
+
     public static void main(String[] args)
     {
         //Open the file, read the data
         File file = new File("../hw3train.txt");
         dataList = readFile(file);
 
-        Node root = new Node();
+        classifier = new ID3Classifier();
+        root = classifier.new Node();
 
+        tabs = "";
         root = makeRule(root, dataList);
 
     }
     
-    
-    private static LinkedList<float[]> readFile(File fileFrom)
+    private static ArrayList<float[]> readFile(File fileFrom)
     {
-        LinkedList<float[]> result = new BufferedReader(new FileReader(fileFrom));
+        ArrayList<float[]> result = new ArrayList<float[]>();
         try {
 
-            BufferedReader br = new BufferedReader( new FileReader ( readFrom ) );
+            BufferedReader br = new BufferedReader( new FileReader ( fileFrom ) );
             String line;
 
             while ((line = br.readLine()) != null) {
@@ -59,11 +64,11 @@ public class ID3Classifier
     {
         //Very first, check if the current node is pure
         int flag = 0;
-        float[] prev = iter.next();
+        float[] prev = currentList.get(0);
 
-        while(iter.hasNext())
+        for(int i = 1; i < currentList.size(); i++)
         {
-            float[] cur = iter.next();
+            float[] cur = currentList.get(i);
             if (cur[4] != prev[4])
             {
                 flag = 1;
@@ -74,8 +79,6 @@ public class ID3Classifier
         //If it's pure, return
         if (flag == 0)
         {
-            current.feature = null;
-            current.threshold = null;
             return current;
         }
         
@@ -116,7 +119,7 @@ public class ID3Classifier
 
         //3. Get the list that matches the axis we want
 
-        ArrayList dataToSplit;
+        ArrayList<float[]> dataToSplit;
         float threshold;
         switch(axis)
         {
@@ -138,30 +141,30 @@ public class ID3Classifier
         }
         
         //4. Create two lists based on the threshold, one list being less than or equal to it and one being greater than it
-        ArrayList lowOrEqual = dataToSplit.subList(0, threshold);
-        ArrayList greaterThan = dataToSplit.sublist(threshold, dataToSplit.size());
+        ArrayList lowOrEqual = new ArrayList(dataToSplit.subList(0, (int)threshold));
+        ArrayList greaterThan = new ArrayList(dataToSplit.subList((int)threshold, dataToSplit.size()));
 
         //5. Load the threshold and axis into the node we were passed as an argument
-        current.threshold = dataToSplit.get(threshold)[axis-1];
+        current.threshold = dataToSplit.get((int)threshold)[axis];
         current.feature = axis;
 
         //6. Create the two child nodes,
-        Node childNode1 = Node();
-        Node childNode2 = Node();
+        current.lChild = classifier.new Node();
+        current.rChild = classifier.new Node();
 
-        //7. make the recursive call
-        childNode1 = makeRule(childNode1, lowOrEqual); //one priority queue
-        childNode2 = makeRule(childNode2, greaterThan);//one priority queue
-
-        //8. Assign these child nodes to the node we were passed
-        current.lChild = childNode1;
-        current.rChild = childNode2;
-
-        //9. Return the node we were passed.
+        //7. make the recursive calls, interlacing them with the prints
+        System.out.println(tabs + "If Feature " + current.feature + " <= " + threshold + ":");
+        tabs = tabs + "\t";
+        System.out.print(tabs + "------> Yes: ");
+        current.lChild = makeRule(current.lChild, lowOrEqual); //one priority queue
+        System.out.print(tabs + "------>  No: ");
+        current.rChild = makeRule(current.rChild, greaterThan);//one priority queue
+        tabs = tabs.substring(0, tabs.length()-2);
+        //8. Return the node we were passed.
         return current;
 
     }
-    
+   
     private static ArrayList<float[]> sortList(ArrayList<float[]> list, int feature)
     {
         //1. if the array's length is <= 1, it's sorted
@@ -174,7 +177,7 @@ public class ID3Classifier
         ArrayList less = new ArrayList();
         ArrayList greater = new ArrayList();
 
-        for(int i = 0; i <= list.size(); i++)
+        for(int i = 0; i < list.size(); i++)
         {
             if (list.get(i)[feature] <= pivotEl[feature])
             {
@@ -192,7 +195,7 @@ public class ID3Classifier
         //our version of concatenating the lists
         less.add(pivotEl);
 
-        for(int j = 0; j <= greater.size(); j++)
+        for(int j = 0; j < greater.size(); j++)
         {
             less.add(greater.get(j));
         }
@@ -202,7 +205,7 @@ public class ID3Classifier
     }
 
 
-    private static float[] bestIG(PriorityQueue<float[]> dataRange)
+    private static float[] bestIG(ArrayList<float[]> dataRange)
     {
         //A. For each pair of adjacent data points (say the current and the previous data point)
             //A1. Get the threshold
@@ -211,13 +214,7 @@ public class ID3Classifier
             //A4. If the new information gain is larger than the current record information gain, then replace the current record information gain and threshold
         double threshold = 0.0;
         double infoGain = -0.1; //IG cannot be < 0.  Initialize to slighly less to force first IG to be assigned to this.
-        List dataList = new ArrayList();
-
-        // convert PQ to AL
-        while (!(dataRange.empty()))
-        {
-            dataList.add(dataRange.poll());
-        }
+        ArrayList<float[]> dataList = dataRange;
 
         for (int i = 0; i < dataList.size() - 1; i++)
         {
@@ -227,7 +224,7 @@ public class ID3Classifier
             int j = 0;
             for (; j <= i; j++)
             {
-                int currLab = dataList.get(j)[1];
+                int currLab = (int)dataList.get(j)[1];
                 if (currLab == 1)
                 {
                     count1L++;
@@ -244,7 +241,7 @@ public class ID3Classifier
             int count3R = 0;
             for (; j < dataList.size() - 1; j++)
             {
-                int currLab = dataList.get(j)[1];
+                int currLab = (int)dataList.get(j)[1];
                 if (currLab == 1)
                 {
                     count1R++;
@@ -257,16 +254,16 @@ public class ID3Classifier
             }
 
             //get conditional entropy
-            double prL = (count1L + count2L + count3L) / double(dataList.size());
-            double prR = (count1R + count2R + count3R) / double(dataList.size());
+            double prL = (count1L + count2L + count3L) / (double)(dataList.size());
+            double prR = (count1R + count2R + count3R) / (double)(dataList.size());
 
-            double pr1L = (count1L / double(dataList.size())) / prL;
-            double pr2L = (count2L / double(dataList.size())) / prL;
-            double pr3L = (count3L / double(dataList.size())) / prL;
+            double pr1L = (count1L / (double)(dataList.size())) / prL;
+            double pr2L = (count2L / (double)(dataList.size())) / prL;
+            double pr3L = (count3L / (double)(dataList.size())) / prL;
 
-            double pr1R = (count1R / double(dataList.size())) / prR;
-            double pr2R = (count2R / double(dataList.size())) / prR;
-            double pr3R = (count3R / double(dataList.size())) / prR;
+            double pr1R = (count1R / (double)(dataList.size())) / prR;
+            double pr2R = (count2R / (double)(dataList.size())) / prR;
+            double pr3R = (count3R / (double)(dataList.size())) / prR;
 
             double entropyL = -(pr1L * Math.log(pr1L)) - (pr2L * Math.log(pr2L)) - (pr3L * Math.log(pr3L));
             double entropyR = -(pr1R * Math.log(pr1R)) - (pr2R * Math.log(pr2R)) - (pr3R * Math.log(pr3R));
@@ -274,9 +271,9 @@ public class ID3Classifier
             double condEntro = (prL * entropyL) + (prR * entropyR);
 
             //get normal entropy
-            double pr1 = (count1L + count1R) / double(dataList.size());
-            double pr2 = (count2L + count2R) / double(dataList.size());
-            double pr3 = (count3L + count3R) / double(dataList.size());
+            double pr1 = (count1L + count1R) / (double)(dataList.size());
+            double pr2 = (count2L + count2R) / (double)(dataList.size());
+            double pr3 = (count3L + count3R) / (double)(dataList.size());
             double origEntro = -(pr1 * Math.log(pr1)) - (pr2 * Math.log(pr2)) - (pr3 * Math.log(pr3));
 
             //get temporary information gain
@@ -290,7 +287,7 @@ public class ID3Classifier
             }
         }
 
-        return (new float[]{float(infoGain), float(threshold)});
+        return (new float[]{(float)(infoGain), (float)(threshold)});
 
     }
 
@@ -300,5 +297,15 @@ public class ID3Classifier
         public float threshold;
         public Node lChild;
         public Node rChild;
+
+        public Node()
+        {
+            feature = -1;
+            threshold = -1;
+            lChild = null;
+            rChild = null;
+        }
+
+
     }
 }

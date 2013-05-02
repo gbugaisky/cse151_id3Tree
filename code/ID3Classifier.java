@@ -218,7 +218,7 @@ public class ID3Classifier
         double infoGain = -0.1; //IG cannot be < 0.  Initialize to slighly less to force first IG to be assigned to this.
         ArrayList<float[]> dataList = dataRange;
 
-        for (int i = 0; i < dataList.size() - 1; i++)
+        for (int i = 1; i < dataList.size() - 2; i++)
         {
             int count1L = 0;
             int count2L = 0;
@@ -241,6 +241,7 @@ public class ID3Classifier
             int count1R = 0;
             int count2R = 0;
             int count3R = 0;
+
             for (; j < dataList.size() - 1; j++)
             {
                 int currLab = (int)dataList.get(j)[1];
@@ -254,7 +255,7 @@ public class ID3Classifier
                 }
                 else { count3R++; }
             }
-
+            
             //get conditional entropy
             double prL = (count1L + count2L + count3L) / (double)(dataList.size());
             double prR = (count1R + count2R + count3R) / (double)(dataList.size());
@@ -266,7 +267,6 @@ public class ID3Classifier
             double pr1R = (count1R / (double)(dataList.size())) / prR;
             double pr2R = (count2R / (double)(dataList.size())) / prR;
             double pr3R = (count3R / (double)(dataList.size())) / prR;
-
             
             double log1, log2, log3;
             if (pr1L == 0)
@@ -324,6 +324,13 @@ public class ID3Classifier
             //get temporary information gain
             double tempInfoGain = origEntro - condEntro;
 
+            System.out.println("tempInfoGain: " + tempInfoGain);
+            System.out.println("  dataList.size(): " + dataList.size() + ", prR: " + prR); 
+            if (count1L == 0 || count2L == 0 || count3L == 0)
+                System.out.println("Left failed");
+
+            if (count1R == 0 || count2R == 0 || count3R == 0)
+                System.out.println("Right failed");
             if (tempInfoGain > infoGain)
             {
                 infoGain = tempInfoGain;

@@ -26,8 +26,46 @@ public class ID3Classifier
         tabs = "";
         root = makeRule(root, dataList);
 
+        File testFile = new File("../hw3test.txt");
+        procData = readFile(testFile);
+        int errorCount = 0;
+        for (int i = 0; i < procData.size(); i++)
+        {
+            float[] currentData = procData.get(i);
+            float predict = predictLabel(root, dataLine);
+            if (predict != currentData[4])
+            {
+                errorCount++;
+            }
+
+        }
+
+        System.out.println("Dataset Size: " + procData.size());
+        System.out.println("Error Count: " + errorCount);
+        System.out.println("Percent Error: " + (errorCount/procData.size()));
+
     }
     
+    private static float predictLabel(Node node, float[] dataLine)
+    {
+        if(node.lChild == null && node.rChild == null)
+        {
+            return node.feature;
+        }
+
+        if(dataLine[node.feature] <= node.threshold)
+        {
+            return predictLabel(node.lChild, dataLine);
+        }
+
+        else
+        {
+            return predictLabel(node.rChild, dataLine);
+        }
+
+    }
+
+
     private static ArrayList<float[]> readFile(File fileFrom)
     {
         ArrayList<float[]> result = new ArrayList<float[]>();

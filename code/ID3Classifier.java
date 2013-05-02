@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.PriorityQueue;
@@ -153,6 +154,72 @@ public class ID3Classifier
         //8. Assign these child nodes to the node we were passed
 
         //9. Return the node we were passed.
+
+    }
+
+    private static float[] bestIG(PriorityQueue<float[]> dataRange)
+    {
+        float threshold = 0.0;
+        float infoGain = -0.1; //IG cannot be < 0.  Initialize to slighly less to force first IG to be assigned to this.
+        List dataList = new ArrayList();
+
+        // convert PQ to AL
+        while (!(dataRange.empty()))
+        {
+            dataList.add(dataRange.poll());
+        }
+
+        float tempThresh = 0.0;
+        for (int i = 0; i < dataList.size() - 1; i++)
+        {
+            tempThresh = dataList.get(i)[0];
+            int count1L = 0;
+            int count2L = 0;
+            int count3L = 0;
+            int j = 0;
+            for (; j <= i; j++)
+            {
+                int currLab = dataList.get(j)[1];
+                if (currLab == 1)
+                {
+                    count1L++;
+                }
+                else if (currLab == 2)
+                {
+                    count2L++;
+                }
+                else { count3L++; }
+            }
+
+            int count1R = 0;
+            int count2R = 0;
+            int count3R = 0;
+            for (; j < dataList.size() - 1; j++)
+            {
+                int currLab = dataList.get(j)[1];
+                if (currLab == 1)
+                {
+                    count1R++;
+                }
+                else if (currLab == 2)
+                {
+                    count2R++;
+                }
+                else { count3R++; }
+            }
+
+            float prL = (count1L + count2L + count3L) / float(dataList.size());
+            float prR = (count1R + count2R + count3R) / float(dataList.size());
+
+            float pr1L = (count1L / float(i+1)) / prL;
+            float pr2L = (count2L / float(i+1)) / prL;
+            float pr3L = (count3L / float(i+1)) / prL;
+
+            float pr1R = (count1R / float(dataList.size() - i - 1)) / prR;
+            float pr2R = (count2R / float(dataList.size() - i - 1)) / prR;
+            float pr3R = (count3R / float(dataList.size() - i - 1)) / prR;
+
+        }
 
     }
 

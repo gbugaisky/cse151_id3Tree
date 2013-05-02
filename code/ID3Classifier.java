@@ -91,59 +91,49 @@ public class ID3Classifier
         
         //0. Declare variables for the best thresholds in each axis and the corresponding entropy
         //1. for each of the priority queues (aka each axis), get it. the first is the gain, the second is the threshold for that
-        float[] igThresA = bestIG(attributeA);
-        float[] igThresB = bestIG(attributeB);
-        float[] igThresC = bestIG(attributeC);
-        float[] igThresD = bestIG(attributeD);
+        float[] igThresA = bestIG(attributeA, 0);
+        float[] igThresB = bestIG(attributeB, 1);
+        float[] igThresC = bestIG(attributeC, 2);
+        float[] igThresD = bestIG(attributeD, 3);
 
         //2. Compare each information gain
+        ArrayList<float[]> dataToSplit;
+        float threshold;
         int axis = 0;
         float IG = igThresA[0];
+        dataToSplit = attributeA;
+        threshold = igThresA[1];
 
         if (IG < igThresB[0])
         {
             axis = 1;
             IG = igThresB[0];
+            dataToSplit = attributeB;
+            threshold = igThresB[1];
         }
 
         if (IG < igThresC[0])
         {
             axis = 2;
             IG = igThresC[0];
+            dataToSplit = attributeC;
+            threshold = igThresC[1];
         }
 
         if (IG < igThresD[0])
         {
             axis = 3;
             IG = igThresD[0];
+            dataToSplit = attributeD;
+            threshold = igThresD[1];
         }
 
         //3. Get the list that matches the axis we want
 
-        ArrayList<float[]> dataToSplit;
-        float threshold;
-        switch(axis)
-        {
-            case 1:
-                dataToSplit = attributeA;
-                threshold = igThresA[1];
-                break;
-            case 2:
-                dataToSplit = attributeB;
-                threshold = igThresB[1];
-                break;
-            case 3:
-                dataToSplit = attributeC;
-                threshold = igThresC[1];
-                break;
-            default:
-                dataToSplit = attributeD;
-                threshold = igThresD[1];
-        }
-        
+        //System.out.println("At " + threshold + " outside is " + dataToSplit.get((int)threshold)[axis]);
         //4. Create two lists based on the threshold, one list being less than or equal to it and one being greater than it
-        ArrayList lowOrEqual = new ArrayList(dataToSplit.subList(0, (int)threshold));
-        ArrayList greaterThan = new ArrayList(dataToSplit.subList((int)threshold, dataToSplit.size()));
+        ArrayList lowOrEqual = new ArrayList(dataToSplit.subList(0, (int)threshold+1));
+        ArrayList greaterThan = new ArrayList(dataToSplit.subList((int)threshold+1, dataToSplit.size()));
 
         //5. Load the threshold and axis into the node we were passed as an argument
         current.threshold = dataToSplit.get((int)threshold)[axis];
@@ -154,14 +144,13 @@ public class ID3Classifier
         current.rChild = classifier.new Node();
 
         //7. make the recursive calls, interlacing them with the prints
-        System.out.println("If Feature " + current.feature + " <= " + threshold + ":");
+        System.out.println("If Feature " + (current.feature+1) + " <= " + dataToSplit.get((int)threshold)[axis] + ":");
         tabs = tabs + "\t";
-        System.out.print(tabs + "------> Yes: ");
+        System.out.println(tabs + "------> Yes: ");
         current.lChild = makeRule(current.lChild, lowOrEqual); //one priority queue
-        System.out.print(tabs + "------>  No: ");
+        System.out.println(tabs + "------>  No: ");
         current.rChild = makeRule(current.rChild, greaterThan);//one priority queue
-        tabs = tabs.substring(0, tabs.length()-2);
-        System.out.println();
+        if (tabs.length() > 1) tabs = tabs.substring(0, tabs.length()-1);
         //8. Return the node we were passed.
         return current;
 
@@ -207,7 +196,7 @@ public class ID3Classifier
     }
 
 
-    private static float[] bestIG(ArrayList<float[]> dataRange)
+    private static float[] bestIG(ArrayList<float[]> dataRange, int feature)
     {
         //A. For each pair of adjacent data points (say the current and the previous data point)
             //A1. Get the threshold
@@ -216,9 +205,10 @@ public class ID3Classifier
             //A4. If the new information gain is larger than the current record information gain, then replace the current record information gain and threshold
         double threshold = 0.0;
         double infoGain = -0.1; //IG cannot be < 0.  Initialize to slighly less to force first IG to be assigned to this.
+        int place = 0;
         ArrayList<float[]> dataList = dataRange;
 
-        for (int i = 1; i < dataList.size() - 2; i++)
+        for (int i = 0; i < dataList.size() - 2; i++)
         {
             int count1L = 0;
             int count2L = 0;
@@ -226,7 +216,7 @@ public class ID3Classifier
             int j = 0;
             for (; j <= i; j++)
             {
-                int currLab = (int)dataList.get(j)[1];
+                int currLab = (int)dataList.get(j)[feature];
                 if (currLab == 1)
                 {
                     count1L++;
@@ -244,7 +234,7 @@ public class ID3Classifier
 
             for (; j < dataList.size() - 1; j++)
             {
-                int currLab = (int)dataList.get(j)[1];
+                int currLab = (int)dataList.get(j)[feature];
                 if (currLab == 1)
                 {
                     count1R++;
@@ -324,22 +314,19 @@ public class ID3Classifier
             //get temporary information gain
             double tempInfoGain = origEntro - condEntro;
 
-            System.out.println("tempInfoGain: " + tempInfoGain);
-            System.out.println("  dataList.size(): " + dataList.size() + ", prR: " + prR); 
-            if (count1L == 0 || count2L == 0 || count3L == 0)
-                System.out.println("Left failed");
-
-            if (count1R == 0 || count2R == 0 || count3R == 0)
-                System.out.println("Right failed");
+            //System.out.println("tempInfoGain: " + tempInfoGain);
+            //System.out.println("  dataList.size(): " + dataList.size() + ", prR: " + prR); 
             if (tempInfoGain > infoGain)
             {
                 infoGain = tempInfoGain;
-                threshold = i;              //now this is the index of the array that gives us the best,
+                threshold = dataList.get(i)[feature];              //now this is the index of the array that gives us the best,
                                             // rather than the actual threshold. This steamlines the thresholding process
+                place = i;
             }
         }
 
-        return (new float[]{(float)(infoGain), (float)(threshold)});
+        System.out.println(tabs+'\t'+"Inside: place = " + place + ", threshold = " + threshold + ", IG = " +infoGain);
+        return (new float[]{(float)(infoGain), (float)(place)});
 
     }
 

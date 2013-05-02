@@ -79,6 +79,7 @@ public class ID3Classifier
         //If it's pure, return
         if (flag == 0)
         {
+            System.out.println("Predict " + (int)prev[4]);
             return current;
         }
         
@@ -153,13 +154,14 @@ public class ID3Classifier
         current.rChild = classifier.new Node();
 
         //7. make the recursive calls, interlacing them with the prints
-        System.out.println(tabs + "If Feature " + current.feature + " <= " + threshold + ":");
+        System.out.println("If Feature " + current.feature + " <= " + threshold + ":");
         tabs = tabs + "\t";
         System.out.print(tabs + "------> Yes: ");
         current.lChild = makeRule(current.lChild, lowOrEqual); //one priority queue
         System.out.print(tabs + "------>  No: ");
         current.rChild = makeRule(current.rChild, greaterThan);//one priority queue
         tabs = tabs.substring(0, tabs.length()-2);
+        System.out.println();
         //8. Return the node we were passed.
         return current;
 
@@ -265,8 +267,37 @@ public class ID3Classifier
             double pr2R = (count2R / (double)(dataList.size())) / prR;
             double pr3R = (count3R / (double)(dataList.size())) / prR;
 
-            double entropyL = -(pr1L * Math.log(pr1L)) - (pr2L * Math.log(pr2L)) - (pr3L * Math.log(pr3L));
-            double entropyR = -(pr1R * Math.log(pr1R)) - (pr2R * Math.log(pr2R)) - (pr3R * Math.log(pr3R));
+            
+            double log1, log2, log3;
+            if (pr1L == 0)
+                log1 = 0;
+            else
+                log1 = Math.log(pr1L);
+            if (pr2L == 0)
+                log2 = 0;
+            else
+                log2 = Math.log(pr2L);
+            if (pr3L == 0)
+                log3 = 0;
+            else
+                log3 = Math.log(pr3L);
+
+            double entropyL = -(pr1L * log1) - (pr2L * log2) - (pr3L * log3);
+            
+            if (pr1R == 0)
+                log1 = 0;
+            else
+                log1 = Math.log(pr1R);
+            if (pr2R == 0)
+                log2 = 0;
+            else
+                log2 = Math.log(pr2R);
+            if (pr3R == 0)
+                log3 = 0;
+            else
+                log3 = Math.log(pr3R);
+
+            double entropyR = -(pr1R * log1) - (pr2R * log2) - (pr3R * log3);
 
             double condEntro = (prL * entropyL) + (prR * entropyR);
 
@@ -274,7 +305,21 @@ public class ID3Classifier
             double pr1 = (count1L + count1R) / (double)(dataList.size());
             double pr2 = (count2L + count2R) / (double)(dataList.size());
             double pr3 = (count3L + count3R) / (double)(dataList.size());
-            double origEntro = -(pr1 * Math.log(pr1)) - (pr2 * Math.log(pr2)) - (pr3 * Math.log(pr3));
+
+            if (pr1 == 0)
+                log1 = 0;
+            else
+                log1 = Math.log(pr1);
+            if (pr2 == 0)
+                log2 = 0;
+            else
+                log2 = Math.log(pr2);
+            if (pr3 == 0)
+                log3 = 0;
+            else
+                log3 = Math.log(pr3);
+
+            double origEntro = -(pr1 * log1) - (pr2 * log2) - (pr3 * log3);
 
             //get temporary information gain
             double tempInfoGain = origEntro - condEntro;

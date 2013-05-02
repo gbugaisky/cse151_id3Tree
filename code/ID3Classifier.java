@@ -59,7 +59,7 @@ public class ID3Classifier
     {
         //Priority queues that will contain copies of the data.
         PriorityQueue<float[]> attributeA = new PriorityQueue
-            (5,
+            (2,
             new Comparator<float[]> () {    //a comparator on a specific element
                 public int compare(float[] a, float[] b) { 
                     return ( (float) b[0]).compareTo(a[0]); //forget which order this makes,
@@ -68,26 +68,26 @@ public class ID3Classifier
             }
             );
         PriorityQueue<float[]> attributeB = new PriorityQueue
-            (5,
+            (2,
             new Comparator<float[]> () {
                 public int compare(float[] a, float[] b) {
-                    return ( (float) b[1]).compareTo(a[1]);
+                    return ( (float) b[0]).compareTo(a[0]);
                 }
             }
             );
         PriorityQueue<float[]> attributeC = new PriorityQueue
-            (5,
+            (2,
             new Comparator<float[]> () {
                 public int compare(float[] a, float[] b) {
-                    return ( (float) b[2]).compareTo(a[2]);
+                    return ( (float) b[0]).compareTo(a[0]);
                 }
             }
             );
         PriorityQueue<float[]> attributeD = new PriorityQueue
-            (5,
+            (2,
             new Comparator<float[]> () {
                 public int compare(float[] a, float[] b) {
-                    return ( (float) b[3]).compareTo(a[3]);
+                    return ( (float) b[0]).compareTo(a[0]);
                 }
             }
             );
@@ -97,18 +97,23 @@ public class ID3Classifier
         int flag = 0;
         ListIterator iter = currentList.ListIterator();
         float[] prev = iter.next();
-        attributeA.add(prev[0]);
-        attributeB.add(prev[1]);
-        attributeC.add(prev[2]);
+        attributeA.add(new float[]{prev[0], prev[4]});
+        attributeB.add(new float[]{prev[1], prev[4]});
+        attributeC.add(new float[]{prev[2], prev[4]});
+        attributeD.add(new float[]{prev[3], prev[4]});
+
         while(iter.hasNext())
         {
             float[] cur = iter.next();
             if (cur[4] != prev[4])
             {
                 flag = 1;
-                break;
             }
             prev = cur;
+            attributeA.add(new float[]{prev[0], prev[4]});
+            attributeB.add(new float[]{prev[1], prev[4]});
+            attributeC.add(new float[]{prev[2], prev[4]});
+            attributeD.add(new float[]{prev[3], prev[4]});
         }
 
         if (flag == 0)
@@ -119,6 +124,8 @@ public class ID3Classifier
         }
         
         
+        
+
         //else we have to split them. Fortunately we've already loaded all of our datapoints by order
 
         //0. Declare variables for the best thresholds in each axis and the corresponding entropy

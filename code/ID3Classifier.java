@@ -55,53 +55,11 @@ public class ID3Classifier
         return result;
     }
 
-
-    private static Node makeRule(Node current, LinkedList<float[]> currentList)
+    private static Node makeRule(Node current, ArrayList<float[]> currentList)
     {
-        //Priority queues that will contain copies of the data.
-        PriorityQueue<float[]> attributeA = new PriorityQueue
-            (2,
-            new Comparator<float[]> () {    //a comparator on a specific element
-                public int compare(float[] a, float[] b) { 
-                    return ( (float) b[0]).compareTo(a[0]); //forget which order this makes,
-                                                            //or if order matters here
-                }
-            }
-            );
-        PriorityQueue<float[]> attributeB = new PriorityQueue
-            (2,
-            new Comparator<float[]> () {
-                public int compare(float[] a, float[] b) {
-                    return ( (float) b[0]).compareTo(a[0]);
-                }
-            }
-            );
-        PriorityQueue<float[]> attributeC = new PriorityQueue
-            (2,
-            new Comparator<float[]> () {
-                public int compare(float[] a, float[] b) {
-                    return ( (float) b[0]).compareTo(a[0]);
-                }
-            }
-            );
-        PriorityQueue<float[]> attributeD = new PriorityQueue
-            (2,
-            new Comparator<float[]> () {
-                public int compare(float[] a, float[] b) {
-                    return ( (float) b[0]).compareTo(a[0]);
-                }
-            }
-            );
-
-
-        //first, check if the current node is pure
+        //Very first, check if the current node is pure
         int flag = 0;
-        ListIterator iter = currentList.ListIterator();
         float[] prev = iter.next();
-        attributeA.add(new float[]{prev[0], prev[4]});
-        attributeB.add(new float[]{prev[1], prev[4]});
-        attributeC.add(new float[]{prev[2], prev[4]});
-        attributeD.add(new float[]{prev[3], prev[4]});
 
         while(iter.hasNext())
         {
@@ -111,12 +69,9 @@ public class ID3Classifier
                 flag = 1;
             }
             prev = cur;
-            attributeA.add(new float[]{prev[0], prev[4]});
-            attributeB.add(new float[]{prev[1], prev[4]});
-            attributeC.add(new float[]{prev[2], prev[4]});
-            attributeD.add(new float[]{prev[3], prev[4]});
         }
 
+        //If it's pure, return
         if (flag == 0)
         {
             current.feature = null;
@@ -124,46 +79,136 @@ public class ID3Classifier
             return current;
         }
         
+        //ArrayLists that contain copies of the data.
+        ArrayList<float[]> attributeA = sortList(currentList, 0);
+        ArrayList<float[]> attributeB = sortList(currentList, 1);
+        ArrayList<float[]> attributeC = sortList(currentList, 2);
+        ArrayList<float[]> attributeD = sortList(currentList, 3);
         
+        //0. Declare variables for the best thresholds in each axis and the corresponding entropy
+        //1. for each of the priority queues (aka each axis), get it. the first is the gain, the second is the threshold for that
         float[] igThresA = bestIG(attributeA);
         float[] igThresB = bestIG(attributeB);
         float[] igThresC = bestIG(attributeC);
         float[] igThresD = bestIG(attributeD);
 
-        
-
-        //else we have to split them. Fortunately we've already loaded all of our datapoints by order
-
-        //0. Declare variables for the best thresholds in each axis and the corresponding entropy
-        //1. for each of the priority queues (aka each axis)
-            //A. For each pair of adjacent data points (say the current and the previous data point)
-                //A1. Get the threshold
-                //A2. compute the entropies of the subgroups created
-                //A3. Get the information gain from the entropies 
-                //A4. If the new information gain is larger than the current record information gain, then replace the current record information gain and threshold
         //2. Compare each information gain
-        //3. Create two priority queues, one for each node
-        //4. For the priority queue which is associated witht the axis of the best information gain
-            //A. Compare an element with the threshold
-            //B. Put it in the appropriate threshold
+        int axis = 0;
+        float IG = igThresA[0];
+
+        if (IG < igThresB[0])
+        {
+            axis = 1;
+            IG = igThresB[0];
+        }
+
+        if (IG < igThresC[0])
+        {
+            axis = 2;
+            IG = igThresC[0];
+        }
+
+        if (IG < igThresD[0])
+        {
+            axis = 3;
+            IG = igThresD[0];
+        }
+
+        //3. Get the list that matches the axis we want
+
+        ArrayList dataToSplit;
+        float threshold;
+        switch(axis)
+        {
+            case 1:
+                dataToSplit = attributeA;
+                threshold = igThresA[1];
+                break;
+            case 2:
+                dataToSplit = attributeB;
+                threshold = igThresB[1];
+                break;
+            case 3:
+                dataToSplit = attributeC;
+                threshold = igThresC[1];
+                break;
+            default:
+                dataToSplit = attributeD;
+                threshold = igThresD[1];
+        }
+        
+        //4. Create two lists based on the threshold, one list being less than or equal to it and one being greater than it
+        ArrayList lowOrEqual = dataToSplit.subList(0, threshold);
+        ArrayList greaterThan = dataToSplit.sublist(threshold, dataToSplit.size());
 
         //5. Load the threshold and axis into the node we were passed as an argument
+        current.threshold = dataToSplit.get(threshold)[axis-1];
+        current.feature = axis;
+
         //6. Create the two child nodes,
         Node childNode1 = Node();
         Node childNode2 = Node();
 
         //7. make the recursive call
-        childNode1 = makeRule(childNode1, //one priority queue
-        childNode2 = makeRule(childNode2, //one priority queue
+        childNode1 = makeRule(childNode1, lowOrEqual); //one priority queue
+        childNode2 = makeRule(childNode2, greaterThan);//one priority queue
 
         //8. Assign these child nodes to the node we were passed
+        current.lChild = childNode1;
+        current.rChild = childNode2;
 
         //9. Return the node we were passed.
+        return current;
+
+    }
+    
+    private static ArrayList<float[]> sortList(ArrayList<float[]> list, int feature)
+    {
+        //1. if the array's length is <= 1, it's sorted
+        if (list.size() <= 1)
+            return list;
+
+        float[] pivotEl = list.get(list.size()/2);
+        list.remove(list.size()/2);
+
+        ArrayList less = new ArrayList();
+        ArrayList greater = new ArrayList();
+
+        for(int i = 0; i <= list.size(); i++)
+        {
+            if (list.get(i)[feature] <= pivotEl[feature])
+            {
+                less.add(list.get(i));
+            } else {
+                greater.add(list.get(i));
+            }
+
+        }
+
+        //the recursive call
+        less = sortList(less, feature);
+        greater = sortList(greater, feature);
+
+        //our version of concatenating the lists
+        less.add(pivotEl);
+
+        for(int j = 0; j <= greater.size(); j++)
+        {
+            less.add(greater.get(j));
+        }
+
+        return less;
 
     }
 
+
     private static float[] bestIG(PriorityQueue<float[]> dataRange)
     {
+        //A. For each pair of adjacent data points (say the current and the previous data point)
+            //A1. Get the threshold
+            //A2. compute the entropies of the subgroups created
+            //A3. Get the information gain from the entropies 
+            //A4. If the new information gain is larger than the current record information gain, then replace the current record information gain and threshold
         double threshold = 0.0;
         double infoGain = -0.1; //IG cannot be < 0.  Initialize to slighly less to force first IG to be assigned to this.
         List dataList = new ArrayList();
@@ -174,10 +219,8 @@ public class ID3Classifier
             dataList.add(dataRange.poll());
         }
 
-        double tempThresh = 0.0;
         for (int i = 0; i < dataList.size() - 1; i++)
         {
-            tempThresh = dataList.get(i)[0];
             int count1L = 0;
             int count2L = 0;
             int count3L = 0;
@@ -242,7 +285,8 @@ public class ID3Classifier
             if (tempInfoGain > infoGain)
             {
                 infoGain = tempInfoGain;
-                threshold = tempThresh;
+                threshold = i;              //now this is the index of the array that gives us the best,
+                                            // rather than the actual threshold. This steamlines the thresholding process
             }
         }
 

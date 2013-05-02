@@ -125,6 +125,11 @@ public class ID3Classifier
         }
         
         
+        float[] igThresA = bestIG(attributeA);
+        float[] igThresB = bestIG(attributeB);
+        float[] igThresC = bestIG(attributeC);
+        float[] igThresD = bestIG(attributeD);
+
         
 
         //else we have to split them. Fortunately we've already loaded all of our datapoints by order
@@ -159,8 +164,8 @@ public class ID3Classifier
 
     private static float[] bestIG(PriorityQueue<float[]> dataRange)
     {
-        float threshold = 0.0;
-        float infoGain = -0.1; //IG cannot be < 0.  Initialize to slighly less to force first IG to be assigned to this.
+        double threshold = 0.0;
+        double infoGain = -0.1; //IG cannot be < 0.  Initialize to slighly less to force first IG to be assigned to this.
         List dataList = new ArrayList();
 
         // convert PQ to AL
@@ -169,7 +174,7 @@ public class ID3Classifier
             dataList.add(dataRange.poll());
         }
 
-        float tempThresh = 0.0;
+        double tempThresh = 0.0;
         for (int i = 0; i < dataList.size() - 1; i++)
         {
             tempThresh = dataList.get(i)[0];
@@ -208,18 +213,40 @@ public class ID3Classifier
                 else { count3R++; }
             }
 
-            float prL = (count1L + count2L + count3L) / float(dataList.size());
-            float prR = (count1R + count2R + count3R) / float(dataList.size());
+            //get conditional entropy
+            double prL = (count1L + count2L + count3L) / double(dataList.size());
+            double prR = (count1R + count2R + count3R) / double(dataList.size());
 
-            float pr1L = (count1L / float(i+1)) / prL;
-            float pr2L = (count2L / float(i+1)) / prL;
-            float pr3L = (count3L / float(i+1)) / prL;
+            double pr1L = (count1L / double(dataList.size())) / prL;
+            double pr2L = (count2L / double(dataList.size())) / prL;
+            double pr3L = (count3L / double(dataList.size())) / prL;
 
-            float pr1R = (count1R / float(dataList.size() - i - 1)) / prR;
-            float pr2R = (count2R / float(dataList.size() - i - 1)) / prR;
-            float pr3R = (count3R / float(dataList.size() - i - 1)) / prR;
+            double pr1R = (count1R / double(dataList.size())) / prR;
+            double pr2R = (count2R / double(dataList.size())) / prR;
+            double pr3R = (count3R / double(dataList.size())) / prR;
 
+            double entropyL = -(pr1L * Math.log(pr1L)) - (pr2L * Math.log(pr2L)) - (pr3L * Math.log(pr3L));
+            double entropyR = -(pr1R * Math.log(pr1R)) - (pr2R * Math.log(pr2R)) - (pr3R * Math.log(pr3R));
+
+            double condEntro = (prL * entropyL) + (prR * entropyR);
+
+            //get normal entropy
+            double pr1 = (count1L + count1R) / double(dataList.size());
+            double pr2 = (count2L + count2R) / double(dataList.size());
+            double pr3 = (count3L + count3R) / double(dataList.size());
+            double origEntro = -(pr1 * Math.log(pr1)) - (pr2 * Math.log(pr2)) - (pr3 * Math.log(pr3));
+
+            //get temporary information gain
+            double tempInfoGain = origEntro - condEntro;
+
+            if (tempInfoGain > infoGain)
+            {
+                infoGain = tempInfoGain;
+                threshold = tempThresh;
+            }
         }
+
+        return (new float[]{float(infoGain), float(threshold)});
 
     }
 

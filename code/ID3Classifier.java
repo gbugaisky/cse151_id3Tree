@@ -118,6 +118,7 @@ public class ID3Classifier
         if (flag == 0)
         {
             System.out.println("Predict " + (int)prev[4]);
+            current.feature = (int)prev[4];
             return current;
         }
         
@@ -184,9 +185,11 @@ public class ID3Classifier
         //7. make the recursive calls, interlacing them with the prints
         System.out.println("If Feature " + (current.feature+1) + " <= " + dataToSplit.get((int)threshold)[axis] + ":");
         tabs = tabs + "\t";
-        System.out.println(tabs + "------> Yes: ");
+        System.out.print(tabs + "------> Yes: ");
+        tabs = tabs + "|";
         current.lChild = makeRule(current.lChild, lowOrEqual); //one priority queue
-        System.out.println(tabs + "------>  No: ");
+        if (tabs.length() > 1) tabs = tabs.substring(0, tabs.length()-1);
+        System.out.print(tabs + "------>  No: ");
         current.rChild = makeRule(current.rChild, greaterThan);//one priority queue
         if (tabs.length() > 1) tabs = tabs.substring(0, tabs.length()-1);
         //8. Return the node we were passed.
@@ -363,7 +366,7 @@ public class ID3Classifier
             }
         }
 
-        System.out.println(tabs+'\t'+"Inside: place = " + place + ", threshold = " + threshold + ", IG = " +infoGain);
+        //System.out.println(tabs+'\t'+"Inside: place = " + place + ", threshold = " + threshold + ", IG = " +infoGain);
         return (new float[]{(float)(infoGain), (float)(place)});
 
     }

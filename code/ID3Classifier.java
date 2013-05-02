@@ -27,12 +27,12 @@ public class ID3Classifier
         root = makeRule(root, dataList);
 
         File testFile = new File("../hw3test.txt");
-        procData = readFile(testFile);
+        ArrayList<float[]> procData = readFile(testFile);
         int errorCount = 0;
         for (int i = 0; i < procData.size(); i++)
         {
             float[] currentData = procData.get(i);
-            float predict = predictLabel(root, dataLine);
+            float predict = predictLabel(root, currentData);
             if (predict != currentData[4])
             {
                 errorCount++;
@@ -42,7 +42,7 @@ public class ID3Classifier
 
         System.out.println("Dataset Size: " + procData.size());
         System.out.println("Error Count: " + errorCount);
-        System.out.println("Percent Error: " + (errorCount/procData.size()));
+        System.out.println("Percent Error: " + 100*(errorCount/((float)procData.size())) + "%");
 
     }
     
@@ -257,7 +257,7 @@ public class ID3Classifier
             int j = 0;
             for (; j <= i; j++)
             {
-                int currLab = (int)dataList.get(j)[feature];
+                int currLab = (int)dataList.get(j)[4];
                 if (currLab == 1)
                 {
                     count1L++;
@@ -275,7 +275,7 @@ public class ID3Classifier
 
             for (; j < dataList.size() - 1; j++)
             {
-                int currLab = (int)dataList.get(j)[feature];
+                int currLab = (int)dataList.get(j)[4];
                 if (currLab == 1)
                 {
                     count1R++;
